@@ -1,0 +1,37 @@
+name: Scheduled Scrape
+
+on:
+  schedule:
+    - cron: '0 * * * *'     
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies & headless Firefox
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y firefox-geckodriver xvfb
+          pip install selenium
+
+      - name: Run scraper
+        # uses Xvfb so headless Firefox has a display
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 &  
+          export DISPLAY=:99  
+          python Test3.py
+
+      - name: Upload CSV
+        uses: actions/upload-artifact@v3
+        with:
+          name: cards-data
+          path: _Cards_Main.csv
