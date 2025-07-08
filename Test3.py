@@ -45,11 +45,13 @@ class TCGScraper:
         self.location = location
         self.run_date = datetime.now().strftime("%Y-%m-%d")
         self.run_time = datetime.now().strftime("%H:%M:%S")
+        
         self.driver = driver if driver else self.init_driver()
         self.verified_clicked = False
 
     def init_driver(self):
         options = Options()
+        options.headless = True
         driver = webdriver.Firefox(options=options)
         driver.maximize_window()
         return driver
