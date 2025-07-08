@@ -21,8 +21,8 @@ jobs:
       - name: Install dependencies & headless Firefox
         run: |
           sudo apt-get update
-          sudo apt-get install -y firefox-geckodriver xvfb
-          pip install selenium
+          sudo apt-get install -y firefox geckodriver xvfb
+          python -m pip install --upgrade pip selenium
 
       - name: Run scraper
         # uses Xvfb so headless Firefox has a display
