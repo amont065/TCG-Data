@@ -37,7 +37,7 @@ SHIPPING_PRICE_XPATH = ".//div[2]/div[2]"
 
 NEXT_PAGE_BUTTON_XPATH = '/html/body/div[2]/div/div/section[2]/section/section[1]/section/section/section/div[2]/a[2]'
 
-CSV_FILENAME = "_Test3.csv"
+CSV_FILENAME = "_Cards_Main.csv"
 
 class TCGScraper:
     def __init__(self, website_link, location, driver=None):
