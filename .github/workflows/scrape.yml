@@ -21,7 +21,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y firefox geckodriver
+          sudo apt-get install -y firefox firefox-geckodriver
 
       - name: Install Python deps
         run: pip install selenium
