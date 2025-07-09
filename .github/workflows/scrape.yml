@@ -58,18 +58,28 @@ jobs:
       - name: Run scraper
         run: |
           export DISPLAY=:99
-          python Test3.py
+          python scraper.py
         env:
           HEADLESS: true
 
-      - name: Check if CSV exists
+      - name: Check scraper output and CSV
         run: |
+          echo "=== Current directory contents ==="
+          ls -la
+          echo ""
+          echo "=== Looking for CSV files ==="
+          find . -name "*.csv" -type f
+          echo ""
           if [ -f "_Cards_Main.csv" ]; then
-            echo "CSV file found, proceeding with upload"
-            ls -la _Cards_Main.csv
+            echo "✅ CSV file found!"
+            echo "File size: $(stat -c%s "_Cards_Main.csv") bytes"
+            echo "Number of lines: $(wc -l < "_Cards_Main.csv")"
+            echo "First few lines:"
+            head -5 "_Cards_Main.csv"
           else
-            echo "Warning: CSV file not found"
-            ls -la
+            echo "❌ CSV file not found"
+            echo "Creating empty CSV file to prevent upload failure"
+            echo "No data scraped at $(date)" > "_Cards_Main.csv"
           fi
 
       - name: Upload CSV
@@ -77,5 +87,4 @@ jobs:
         with:
           name: cards-data-${{ github.run_number }}
           path: _Cards_Main.csv
-        if: always()  # Upload even if previous steps had issues
-
+          if-no-files-found: warn
