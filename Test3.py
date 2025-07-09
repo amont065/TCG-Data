@@ -265,7 +265,7 @@ def main():
                         time.sleep(RETRY_DELAY)
                     else:
                         logging.error("Skipping %s after %d failures.", url, attempts)
-            time.sleep(10)  # Reduced delay for GitHub Actions
+            time.sleep(12)  # Reduced delay for GitHub Actions
         
         logging.info("Scraping completed successfully!")
         
