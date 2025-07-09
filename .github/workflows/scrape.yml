@@ -58,7 +58,7 @@ jobs:
       - name: Run scraper
         run: |
           export DISPLAY=:99
-          python scraper.py
+          python Test3.py
         env:
           HEADLESS: true
 
