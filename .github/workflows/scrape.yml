@@ -11,20 +11,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install selenium
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y firefox geckodriver
+
+      - name: Install Python deps
         run: pip install selenium
-        
-      - name: Install geckodriver
-        uses: mozilla/setup-geckodriver@v2
-        with: 
-              geckodriver-version: 'latest'
 
       - name: Run scraper
         run: python Test3.py
@@ -34,3 +34,4 @@ jobs:
         with:
           name: cards-data
           path: _Cards_Main.csv
+
