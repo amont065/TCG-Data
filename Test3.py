@@ -242,6 +242,8 @@ def main():
 
     MAX_RETRIES = 3
     RETRY_DELAY = 5 
+    success_count = 0
+    total_urls = len(urls)
 
     # Initialize one browser instance with GitHub Actions compatible settings
     driver = None
@@ -249,13 +251,15 @@ def main():
         scraper = TCGScraper(None, VPN)
         driver = scraper.driver
         
-        for url in urls:
+        for i, url in enumerate(urls, 1):
             attempts = 0
             while attempts < MAX_RETRIES:
-                logging.info("Starting scrape for %s (attempt %d/%d)", url, attempts+1, MAX_RETRIES)
+                logging.info("Starting scrape for %s (attempt %d/%d) [URL %d/%d]", url, attempts+1, MAX_RETRIES, i, total_urls)
                 scraper.website_link = url
                 try:
                     scraper.scrape()
+                    success_count += 1
+                    logging.info("✅ Successfully scraped URL %d/%d", i, total_urls)
                     break
                 except Exception as e:
                     logging.error("Error scraping %s: %s", url, e)
@@ -264,13 +268,33 @@ def main():
                         logging.info("Retrying %s in %d seconds…", url, RETRY_DELAY)
                         time.sleep(RETRY_DELAY)
                     else:
-                        logging.error("Skipping %s after %d failures.", url, attempts)
-            time.sleep(12)  # Reduced delay for GitHub Actions
+                        logging.error("❌ Skipping %s after %d failures.", url, attempts)
+            time.sleep(10)  # Reduced delay for GitHub Actions
         
-        logging.info("Scraping completed successfully!")
+        logging.info("Scraping completed! Successfully scraped %d/%d URLs", success_count, total_urls)
+        
+        # Ensure CSV file exists even if no data was scraped
+        if not os.path.exists(CSV_FILENAME):
+            logging.warning("No CSV file created, creating empty file with headers")
+            with open(CSV_FILENAME, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    'Card Name','Seller Name','Condition','Price','Quantity Available',
+                    'Is Direct Seller','Is Hobby Shop','Is Gold Star Seller',
+                    'Seller Rating','Shipping Price','Total Sales','Is Buy Box Seller',
+                    'Date','Time','VPN Location'
+                ])
+                writer.writerow(['No data scraped', 'Check logs for errors', '', '', '', '', '', '', '', '', '', '', 
+                               datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%H:%M:%S"), VPN])
         
     except Exception as e:
         logging.error("Fatal error in main(): %s", e)
+        # Still create CSV file even on fatal error
+        if not os.path.exists(CSV_FILENAME):
+            with open(CSV_FILENAME, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Error', 'Fatal error occurred', str(e), '', '', '', '', '', '', '', '', '', 
+                               datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%H:%M:%S"), VPN])
         raise
     finally:
         if driver:
