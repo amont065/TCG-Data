@@ -4,7 +4,6 @@ import time
 import logging
 from datetime import datetime
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,7 +13,7 @@ from selenium.common.exceptions import NoSuchElementException
 '''
 Author: Alberto
 Latest Date: 7/7/2025
-Notes: Updated for GitHub Actions compatibility
+Notes: 
 '''
 
 # Logging
@@ -51,31 +50,11 @@ class TCGScraper:
         self.verified_clicked = False
 
     def init_driver(self):
-        """Initialize Firefox driver with GitHub Actions compatible settings"""
         options = Options()
-        
-        # GitHub Actions requires these options
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-plugins")
-        options.add_argument("--disable-images")  # Faster loading
-        options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-        
-        # Set up service with geckodriver path for GitHub Actions
-        service = Service("/usr/local/bin/geckodriver")
-        
-        try:
-            driver = webdriver.Firefox(service=service, options=options)
-            driver.set_page_load_timeout(30)
-            driver.implicitly_wait(10)
-            return driver
-        except Exception as e:
-            logging.error(f"Failed to initialize driver: {e}")
-            raise
+        options.headless = True
+        driver = webdriver.Firefox(options=options)
+        driver.maximize_window()
+        return driver
 
     def wait_for_element(self, by, locator, timeout=20):
         return WebDriverWait(self.driver, timeout).until(
@@ -219,9 +198,7 @@ class TCGScraper:
             raise
 
 def main():
-    # Use environment variable for VPN location or default to GitHub Actions location
-    VPN = os.getenv('GITHUB_ACTIONS_LOCATION', 'GitHub Actions')
-    
+    VPN = "Las Vegas"
     urls = [
         "https://www.tcgplayer.com/product/576520/magic-duskmourn-house-of-horror-hushwood-verge?page=1&Language=English",        #magic
         "https://www.tcgplayer.com/product/576530/magic-duskmourn-house-of-horror-thornspire-verge?Language=English&page=1",
@@ -242,67 +219,31 @@ def main():
 
     MAX_RETRIES = 3
     RETRY_DELAY = 5 
-    success_count = 0
-    total_urls = len(urls)
 
-    # Initialize one browser instance with GitHub Actions compatible settings
-    driver = None
-    try:
-        scraper = TCGScraper(None, VPN)
-        driver = scraper.driver
-        
-        for i, url in enumerate(urls, 1):
-            attempts = 0
-            while attempts < MAX_RETRIES:
-                logging.info("Starting scrape for %s (attempt %d/%d) [URL %d/%d]", url, attempts+1, MAX_RETRIES, i, total_urls)
-                scraper.website_link = url
-                try:
-                    scraper.scrape()
-                    success_count += 1
-                    logging.info("✅ Successfully scraped URL %d/%d", i, total_urls)
-                    break
-                except Exception as e:
-                    logging.error("Error scraping %s: %s", url, e)
-                    attempts += 1
-                    if attempts < MAX_RETRIES:
-                        logging.info("Retrying %s in %d seconds…", url, RETRY_DELAY)
-                        time.sleep(RETRY_DELAY)
-                    else:
-                        logging.error("❌ Skipping %s after %d failures.", url, attempts)
-            time.sleep(10)  # Reduced delay for GitHub Actions
-        
-        logging.info("Scraping completed! Successfully scraped %d/%d URLs", success_count, total_urls)
-        
-        # Ensure CSV file exists even if no data was scraped
-        if not os.path.exists(CSV_FILENAME):
-            logging.warning("No CSV file created, creating empty file with headers")
-            with open(CSV_FILENAME, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow([
-                    'Card Name','Seller Name','Condition','Price','Quantity Available',
-                    'Is Direct Seller','Is Hobby Shop','Is Gold Star Seller',
-                    'Seller Rating','Shipping Price','Total Sales','Is Buy Box Seller',
-                    'Date','Time','VPN Location'
-                ])
-                writer.writerow(['No data scraped', 'Check logs for errors', '', '', '', '', '', '', '', '', '', '', 
-                               datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%H:%M:%S"), VPN])
-        
-    except Exception as e:
-        logging.error("Fatal error in main(): %s", e)
-        # Still create CSV file even on fatal error
-        if not os.path.exists(CSV_FILENAME):
-            with open(CSV_FILENAME, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(['Error', 'Fatal error occurred', str(e), '', '', '', '', '', '', '', '', '', 
-                               datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%H:%M:%S"), VPN])
-        raise
-    finally:
-        if driver:
+    # initialize one browser instance
+    options = Options()
+    driver = webdriver.Firefox(options=options)
+    driver.maximize_window()
+    scraper = TCGScraper(None, VPN, driver)
+
+    for url in urls:
+        attempts = 0
+        while attempts < MAX_RETRIES:
+            logging.info("Starting scrape for %s (attempt %d/%d)", url, attempts+1, MAX_RETRIES)
+            scraper.website_link = url
             try:
-                driver.quit()
-                logging.info("Driver closed successfully")
-            except:
-                pass
+                scraper.scrape()
+                break
+            except Exception:
+                attempts += 1
+                if attempts < MAX_RETRIES:
+                    logging.info("Retrying %s in %d seconds…", url, RETRY_DELAY)
+                    time.sleep(RETRY_DELAY)
+                else:
+                    logging.error("Skipping %s after %d failures.", url, attempts)
+        time.sleep(15)
+
+    driver.quit()
 
 if __name__ == "__main__":
     main()
