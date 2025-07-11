@@ -220,7 +220,7 @@ def main():
             except Exception:
                 attempts += 1
                 if attempts < MAX_RETRIES:
-                    logging.info("Retrying %s in %d seconds…", url, RETRY_DELAY)
+                    logging.info("Retrying %s in %d seconds...", url, RETRY_DELAY)
                     time.sleep(RETRY_DELAY)
                 else:
                     logging.error("Skipping %s after %d failures.", url, attempts)
