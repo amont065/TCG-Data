@@ -38,7 +38,7 @@ class TCGScraper:
         options = Options()
         options.headless = True
         firefox_path = "/usr/lib/firefox/firefox"
-        options.binary_location = firefox_path
+        #options.binary_location = firefox_path
         logging.info("Using Firefox binary at %s", firefox_path)
         driver = webdriver.Firefox(options=options)
         driver.maximize_window()
@@ -208,7 +208,7 @@ def main():
     options = Options()
     options.headless = True
     firefox_path = "/usr/lib/firefox/firefox"
-    options.binary_location = firefox_path
+    #options.binary_location = firefox_path
     logging.info("Using Firefox binary at %s", firefox_path)
     driver = webdriver.Firefox(options=options)
     driver.maximize_window()
