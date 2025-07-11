@@ -30,7 +30,7 @@ jobs:
 
       - name: Run Scraper Script with Debugging
         run: |
-          python Test3.py > debug.log 2>&1 || echo "Script failed"
+          python Test3.py || echo "Script failed"
 
       - name: Upload Debug Logs
         if: always()
