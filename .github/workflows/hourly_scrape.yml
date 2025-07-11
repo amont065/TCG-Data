@@ -1,3 +1,10 @@
+name: Hourly Scraper
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # every hour on the hour
+  workflow_dispatch:
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
