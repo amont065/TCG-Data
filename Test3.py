@@ -28,7 +28,7 @@ class TCGScraper:
     def init_driver(self):
         options = Options()
         options.headless = True
-        options.binary_location = '/usr/bin/firefox'  # Set the correct Firefox binary location
+        options.binary_location = '/snap/bin/firefox'  
         driver = webdriver.Firefox(options=options)
         driver.maximize_window()
         return driver
@@ -196,7 +196,7 @@ def main():
 
     options = Options()
     options.headless = True
-    options.binary_location = '/usr/bin/firefox'  # Ensure the Firefox binary is located correctly
+    options.binary_location = '/snap/bin/firefox'
     driver = webdriver.Firefox(options=options)
     driver.maximize_window()
     scraper = TCGScraper(None, VPN, driver)
