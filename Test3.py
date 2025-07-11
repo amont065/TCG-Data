@@ -175,21 +175,21 @@ class TCGScraper:
 def main():
     VPN = "Las Vegas"
     urls = [
-        "https://www.tcgplayer.com/product/576520/magic-duskmourn-house-of-horror-hushwood-verge?page=1&Language=English",        #magic
-        "https://www.tcgplayer.com/product/576530/magic-duskmourn-house-of-horror-thornspire-verge?Language=English&page=1",
-        "https://www.tcgplayer.com/product/576512/magic-duskmourn-house-of-horror-blazemire-verge?page=1&Language=English",
-        "https://www.tcgplayer.com/product/576518/magic-duskmourn-house-of-horror-gloomlake-verge?Language=English&page=1",
-        "https://www.tcgplayer.com/product/576514/magic-duskmourn-house-of-horror-floodfarm-verge?page=1&Language=English",
-        "https://www.tcgplayer.com/product/592008/lorcana-tcg-azurite-sea-sail-the-azurite-sea?Language=English&page=1",       #lorcana
-        "https://www.tcgplayer.com/product/506836/lorcana-tcg-the-first-chapter-rapunzel-gifted-with-healing?Language=English&page=1",
-        "https://www.tcgplayer.com/product/561975/lorcana-tcg-shimmering-skies-pete-games-referee?Language=English&page=1",
-        "https://www.tcgplayer.com/product/538726/lorcana-tcg-into-the-inklands-ursula-deceiver-of-all?Language=English&page=1",
-        "https://www.tcgplayer.com/product/527238/lorcana-tcg-rise-of-the-floodborn-strength-of-a-raging-fire?Language=English&page=1",
-        "https://www.tcgplayer.com/product/488071/pokemon-sv01-scarlet-and-violet-base-set-arven-166-198?page=1&Language=English",       #pokemon
-        "https://www.tcgplayer.com/product/632946/pokemon-sv10-destined-rivals-arvens-mabosstiff-ex-139-182?Language=English&page=1",
-        "https://www.tcgplayer.com/product/560372/pokemon-sv-shrouded-fable-night-stretcher?page=1&Language=English",
-        "https://www.tcgplayer.com/product/632982/pokemon-sv10-destined-rivals-team-rockets-energy?Language=English&page=1",
-        "https://www.tcgplayer.com/product/630823/pokemon-sv10-destined-rivals-marnies-grimmsnarl-ex?Language=English&page=1"
+        "https://www.tcgplayer.com/product/576520/magic-duskmourn-house-of-horror-hushwood-verge?page=1&Language=English"        #magic
+        #"https://www.tcgplayer.com/product/576530/magic-duskmourn-house-of-horror-thornspire-verge?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/576512/magic-duskmourn-house-of-horror-blazemire-verge?page=1&Language=English",
+        #"https://www.tcgplayer.com/product/576518/magic-duskmourn-house-of-horror-gloomlake-verge?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/576514/magic-duskmourn-house-of-horror-floodfarm-verge?page=1&Language=English",
+        #"https://www.tcgplayer.com/product/592008/lorcana-tcg-azurite-sea-sail-the-azurite-sea?Language=English&page=1",       #lorcana
+        #"https://www.tcgplayer.com/product/506836/lorcana-tcg-the-first-chapter-rapunzel-gifted-with-healing?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/561975/lorcana-tcg-shimmering-skies-pete-games-referee?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/538726/lorcana-tcg-into-the-inklands-ursula-deceiver-of-all?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/527238/lorcana-tcg-rise-of-the-floodborn-strength-of-a-raging-fire?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/488071/pokemon-sv01-scarlet-and-violet-base-set-arven-166-198?page=1&Language=English",       #pokemon
+        #"https://www.tcgplayer.com/product/632946/pokemon-sv10-destined-rivals-arvens-mabosstiff-ex-139-182?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/560372/pokemon-sv-shrouded-fable-night-stretcher?page=1&Language=English",
+        #"https://www.tcgplayer.com/product/632982/pokemon-sv10-destined-rivals-team-rockets-energy?Language=English&page=1",
+        #"https://www.tcgplayer.com/product/630823/pokemon-sv10-destined-rivals-marnies-grimmsnarl-ex?Language=English&page=1"
     ]
     MAX_RETRIES = 3
     RETRY_DELAY = 5 
