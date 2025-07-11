@@ -2,6 +2,7 @@ import os
 import csv
 import time
 import logging
+import subprocess
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -36,6 +37,9 @@ class TCGScraper:
     def init_driver(self):
         options = Options()
         options.headless = True
+        firefox_path = subprocess.getoutput("readlink -f $(which firefox)") or "/usr/lib/firefox/firefox"
+        options.binary_location = firefox_path
+        logging.info("Using Firefox binary at %s", firefox_path)
         driver = webdriver.Firefox(options=options)
         driver.maximize_window()
         return driver
@@ -203,6 +207,9 @@ def main():
 
     options = Options()
     options.headless = True
+    firefox_path = subprocess.getoutput("readlink -f $(which firefox)") or "/usr/lib/firefox/firefox"
+    options.binary_location = firefox_path
+    logging.info("Using Firefox binary at %s", firefox_path)
     driver = webdriver.Firefox(options=options)
     driver.maximize_window()
     scraper = TCGScraper(None, VPN, driver)
