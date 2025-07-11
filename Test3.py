@@ -3,6 +3,7 @@ import csv
 import time
 import logging
 import subprocess
+import requests
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -21,6 +22,20 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+
+def get_location():
+    """Return the user's location using ipinfo.io or 'Unknown' if unavailable."""
+    try:
+        resp = requests.get("https://ipinfo.io/json", timeout=5)
+        resp.raise_for_status()
+        info = resp.json()
+        city = info.get("city")
+        region = info.get("region")
+        if city and region:
+            return f"{city}, {region}"
+        return region or city or "Unknown"
+    except Exception as e:
+        logging.warning("Location detection failed: %s", e)
 
 # Selectors and constants remain the same...
 CSV_FILENAME = "_Cards_Main.csv"
@@ -184,7 +199,8 @@ class TCGScraper:
             raise
 
 def main():
-    VPN = "Las Vegas"
+    VPN = get_location()
+    logging.info("Using detected location: %s", VPN)
     urls = [
         "https://www.tcgplayer.com/product/576520/magic-duskmourn-house-of-horror-hushwood-verge?page=1&Language=English"        #magic
         #"https://www.tcgplayer.com/product/576530/magic-duskmourn-house-of-horror-thornspire-verge?Language=English&page=1",
