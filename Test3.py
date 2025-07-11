@@ -10,33 +10,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
-'''
-Author: Alberto
-Latest Date: 7/7/2025
-Notes: 
-'''
-
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Selectors
-BUY_BOX_SELLER_XPATH = '//*[@id="app"]/div/div/section[2]/section/div/div[2]/section[2]/section[1]/div/section[3]'
-BUY_BOX_QUANTITY_SELECTOR = '.add-to-cart__available'
-BUY_BOX_CONDITION_SELECTOR = '.spotlight__condition'
-BUY_BOX_PRICE_SELECTOR = '.spotlight__price'
-BUY_BOX_SHIPPING_XPATH = '//*[@id="app"]/div/div/section[2]/section/div[2]/div[2]/section[2]/section[1]/div/section[2]/div/span'
-
-SELLER_LISTING_CONTAINER_XPATH = 'div.product-details__listings-results section.listing-item'
-SELLER_NAME_SELECTOR = ".seller-info__name"
-SELLER_CONDITION_SELECTOR = '.listing-item__listing-data__info__condition a'
-SELLER_PRICE_SELECTOR = '.listing-item__listing-data__info__price'
-SELLER_QUANTITY_SELECTOR = ".add-to-cart__available"
-SELLER_RATING_XPATH = ".//div[1]/div/div/div[1]"
-TOTAL_SALES_XPATH = ".//div[1]/div/div/div[2]"
-SHIPPING_PRICE_XPATH = ".//div[2]/div[2]"
-
-NEXT_PAGE_BUTTON_XPATH = '/html/body/div[2]/div/div/section[2]/section/section[1]/section/section/section/div[2]/a[2]'
-
+# Selectors and constants remain the same...
 CSV_FILENAME = "_Cards_Main.csv"
 
 class TCGScraper:
@@ -45,14 +22,13 @@ class TCGScraper:
         self.location = location
         self.run_date = datetime.now().strftime("%Y-%m-%d")
         self.run_time = datetime.now().strftime("%H:%M:%S")
-        
         self.driver = driver if driver else self.init_driver()
         self.verified_clicked = False
 
     def init_driver(self):
         options = Options()
         options.headless = True
-        options.binary_location = '/usr/bin/firefox'
+        options.binary_location = '/usr/bin/firefox'  # Set the correct Firefox binary location
         driver = webdriver.Firefox(options=options)
         driver.maximize_window()
         return driver
@@ -70,15 +46,15 @@ class TCGScraper:
             return ""
 
     def get_buy_box_data(self):
-        seller = self.get_element_text(By.XPATH, BUY_BOX_SELLER_XPATH, 'Buy Box Seller')
+        seller = self.get_element_text(By.XPATH, '//*[@id="app"]/div/div/section[2]/section/div/div[2]/section[2]/section[1]/div/section[3]', 'Buy Box Seller')
         if seller.startswith("Sold by "):
             seller = seller[len("Sold by "):]
 
-        qty_txt = self.get_element_text(By.CSS_SELECTOR, BUY_BOX_QUANTITY_SELECTOR, 'Buy Box Quantity')
+        qty_txt = self.get_element_text(By.CSS_SELECTOR, '.add-to-cart__available', 'Buy Box Quantity')
         qty = qty_txt.split()[-1] if qty_txt else ""
-        cond = self.get_element_text(By.CSS_SELECTOR, BUY_BOX_CONDITION_SELECTOR, 'Buy Box Condition')
-        price = self.get_element_text(By.CSS_SELECTOR, BUY_BOX_PRICE_SELECTOR, 'Buy Box Price')
-        ship = self.get_element_text(By.XPATH, BUY_BOX_SHIPPING_XPATH, 'Buy Box Shipping')
+        cond = self.get_element_text(By.CSS_SELECTOR, '.spotlight__condition', 'Buy Box Condition')
+        price = self.get_element_text(By.CSS_SELECTOR, '.spotlight__price', 'Buy Box Price')
+        ship = self.get_element_text(By.XPATH, '//*[@id="app"]/div/div/section[2]/section/div[2]/div[2]/section[2]/section[1]/div/section[2]/div/span', 'Buy Box Shipping')
 
         total_sales = "Not Available"
         hobby = gold = rating = "Not Available"
@@ -99,20 +75,20 @@ class TCGScraper:
             return ""
 
     def get_listing_data(self, listing, buy_box_name):
-        name = self.safe_find_text(listing, SELLER_NAME_SELECTOR, "Seller Name")
-        cond = self.safe_find_text(listing, SELLER_CONDITION_SELECTOR, "Condition")
-        price = self.safe_find_text(listing, SELLER_PRICE_SELECTOR, "Price")
-        qty_txt = self.safe_find_text(listing, SELLER_QUANTITY_SELECTOR, "Quantity")
+        name = self.safe_find_text(listing, ".seller-info__name", "Seller Name")
+        cond = self.safe_find_text(listing, '.listing-item__listing-data__info__condition a', "Condition")
+        price = self.safe_find_text(listing, '.listing-item__listing-data__info__price', "Price")
+        qty_txt = self.safe_find_text(listing, ".add-to-cart__available", "Quantity")
         qty = qty_txt.split()[-1] if qty_txt else ""
 
         direct = "TRUE" if listing.find_elements(By.CSS_SELECTOR, "img[alt='Direct Seller']") else "FALSE"
         hobby  = "TRUE" if listing.find_elements(By.CSS_SELECTOR, "img[alt='Certified Hobby Shop']") else "FALSE"
         gold   = "TRUE" if listing.find_elements(By.CSS_SELECTOR, "img[alt='Gold Star Seller']") else "FALSE"
 
-        rating_txt = self.safe_find_text(listing, SELLER_RATING_XPATH, "Seller Rating", by=By.XPATH)
-        sales_txt  = self.safe_find_text(listing, TOTAL_SALES_XPATH, "Total Sales", by=By.XPATH)
+        rating_txt = self.safe_find_text(listing, ".//div[1]/div/div/div[1]", "Seller Rating", by=By.XPATH)
+        sales_txt  = self.safe_find_text(listing, ".//div[1]/div/div/div[2]", "Total Sales", by=By.XPATH)
         sales = sales_txt.replace("(", "").replace(")", "") if sales_txt else "Not Available"
-        ship = self.safe_find_text(listing, SHIPPING_PRICE_XPATH, "Shipping Price", by=By.XPATH)
+        ship = self.safe_find_text(listing, ".//div[2]/div[2]", "Shipping Price", by=By.XPATH)
 
         is_bb = (name == buy_box_name)
         return [name, cond, price, qty, direct, hobby, gold, rating_txt, ship, sales, is_bb]
@@ -172,21 +148,19 @@ class TCGScraper:
             # listing pages loop
             page_number = 1
             while True:
-                listings = self.driver.find_elements(By.CSS_SELECTOR, SELLER_LISTING_CONTAINER_XPATH)
+                listings = self.driver.find_elements(By.CSS_SELECTOR, "div.product-details__listings-results section.listing-item")
                 data = [[card] + self.get_listing_data(l, bb_name) for l in listings]
                 self.save_to_csv(data)
                 logging.info("Scraped listing page %d", page_number)
 
                 try:
-                    nxt = self.driver.find_element(By.XPATH, NEXT_PAGE_BUTTON_XPATH)
-                    disabled = (
-                        nxt.get_attribute("aria-disabled") == "true"
-                    )
+                    nxt = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/section[2]/section/section[1]/section/section/section/div[2]/a[2]')
+                    disabled = nxt.get_attribute("aria-disabled") == "true"
                     if disabled:
                         logging.info("Next is disabled; done.")
                         break
                     nxt.click()
-                    self.wait_for_element(By.CSS_SELECTOR, SELLER_LISTING_CONTAINER_XPATH)
+                    self.wait_for_element(By.CSS_SELECTOR, "div.product-details__listings-results section.listing-item")
                     time.sleep(2)
                     page_number += 1
                 except NoSuchElementException:
@@ -217,12 +191,12 @@ def main():
         "https://www.tcgplayer.com/product/632982/pokemon-sv10-destined-rivals-team-rockets-energy?Language=English&page=1",
         "https://www.tcgplayer.com/product/630823/pokemon-sv10-destined-rivals-marnies-grimmsnarl-ex?Language=English&page=1"
     ]
-
     MAX_RETRIES = 3
     RETRY_DELAY = 5 
 
-    # initialize one browser instance
     options = Options()
+    options.headless = True
+    options.binary_location = '/usr/bin/firefox'  # Ensure the Firefox binary is located correctly
     driver = webdriver.Firefox(options=options)
     driver.maximize_window()
     scraper = TCGScraper(None, VPN, driver)
