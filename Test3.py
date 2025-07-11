@@ -11,7 +11,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
 # Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+LOG_FILENAME = "debug.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILENAME, mode='w', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 
 # Selectors and constants remain the same...
 CSV_FILENAME = "_Cards_Main.csv"
