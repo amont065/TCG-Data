@@ -37,7 +37,7 @@ class TCGScraper:
     def init_driver(self):
         options = Options()
         options.headless = True
-        firefox_path = subprocess.getoutput("readlink -f $(which firefox)") or "/usr/lib/firefox/firefox"
+        firefox_path = "/usr/lib/firefox/firefox"
         options.binary_location = firefox_path
         logging.info("Using Firefox binary at %s", firefox_path)
         driver = webdriver.Firefox(options=options)
@@ -207,7 +207,7 @@ def main():
 
     options = Options()
     options.headless = True
-    firefox_path = subprocess.getoutput("readlink -f $(which firefox)") or "/usr/lib/firefox/firefox"
+    firefox_path = "/usr/lib/firefox/firefox"
     options.binary_location = firefox_path
     logging.info("Using Firefox binary at %s", firefox_path)
     driver = webdriver.Firefox(options=options)
