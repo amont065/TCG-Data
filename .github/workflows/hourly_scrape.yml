@@ -28,10 +28,17 @@ jobs:
           wget https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz
           tar -xzf geckodriver-v0.33.0-linux64.tar.gz
           chmod +x geckodriver
-          sudo mv geckodriver /snap/bin/firefox
+          sudo mv geckodriver /usr/local/bin/geckodriver
+
+      - name: Setup Firefox in headless mode
+        run: |
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+
 
       - name: Run Scraper Script with Debugging
         run: |
+          export DISPLAY=:99
           python Test3.py > debug.log 2>&1 || true
           echo "Script failed; uploading logs for debugging."
 
