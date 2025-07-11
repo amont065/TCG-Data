@@ -2,7 +2,6 @@ import os
 import csv
 import time
 import logging
-import subprocess
 import requests
 from datetime import datetime
 from selenium import webdriver
