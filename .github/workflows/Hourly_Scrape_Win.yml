@@ -32,6 +32,13 @@ jobs:
         run: |
           python Test3.py || echo "Script failed"
 
+      - name: Upload CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cards-main
+          path: _Cards_Main.csv
+
       - name: Upload Debug Logs
         if: always()
         uses: actions/upload-artifact@v4
