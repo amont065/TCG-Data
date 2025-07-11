@@ -28,12 +28,13 @@ jobs:
           chmod +x geckodriver
           sudo mv geckodriver /snap/bin/firefox
 
-      - name: Run Scraper Script
+      - name: Run Scraper Script with Debugging
         run: |
-          python Test3.py
+          python Test3.py > debug.log 2>&1 || true
+          echo "Script failed; uploading logs for debugging."
 
-      - name: Upload CSV artifact
+      - name: Upload Debug Logs
         uses: actions/upload-artifact@v4
         with:
-          name: scraped-cards-csv
-          path: _Cards_Main.csv
+          name: debug-logs
+          path: debug.log
