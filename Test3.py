@@ -4,6 +4,7 @@ import time
 import logging
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
@@ -11,8 +12,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
+PST = ZoneInfo("America/Los_Angeles")
+TIMESTAMP = datetime.now(PST).strftime("%Y-%m-%d_%H-%M-%S")
+
 # Logging
-LOG_FILENAME = "debug.log"
+LOG_FILENAME = f"debug_{TIMESTAMP}.log"
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -37,14 +41,14 @@ def get_location():
         logging.warning("Location detection failed: %s", e)
 
 # Selectors and constants remain the same...
-CSV_FILENAME = "_Cards_Main.csv"
+CSV_FILENAME = f"{TIMESTAMP}_Cards_Main.csv"
 
 class TCGScraper:
     def __init__(self, website_link, location, driver=None):
         self.website_link = website_link
         self.location = location
-        self.run_date = datetime.now().strftime("%Y-%m-%d")
-        self.run_time = datetime.now().strftime("%H:%M:%S")
+        self.run_date = datetime.now(PST).strftime("%Y-%m-%d")
+        self.run_time = datetime.now(PST).strftime("%H:%M:%S")
         self.driver = driver if driver else self.init_driver()
         self.verified_clicked = False
 
@@ -124,7 +128,7 @@ class TCGScraper:
                     'Card Name','Seller Name','Condition','Price','Quantity Available',
                     'Is Direct Seller','Is Hobby Shop','Is Gold Star Seller',
                     'Seller Rating','Shipping Price','Total Sales','Is Buy Box Seller',
-                    'Date','Time (UTC)','VPN Location'
+                    'Date','Time (PST)','VPN Location'
                 ])
             for r in rows:
                 w.writerow(r + [self.run_date, self.run_time, self.location])
