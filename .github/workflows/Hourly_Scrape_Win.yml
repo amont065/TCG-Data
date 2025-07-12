@@ -2,7 +2,7 @@ name: Hourly Scraper Windows
 
 on:
   schedule:
-    - cron: "0 * * * *"  # every hour on the hour
+    - cron: "12 * * * *"  # every hour on the hour
   workflow_dispatch:
 
 jobs:
