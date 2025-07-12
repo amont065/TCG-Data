@@ -3,8 +3,8 @@ import csv
 import time
 import logging
 import requests
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
@@ -12,7 +12,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
-PST = ZoneInfo("America/Los_Angeles")
+try:
+    PST = ZoneInfo("America/Los_Angeles")
+except ZoneInfoNotFoundError:
+    logging.warning("Amerca/LA time zone not found. Defaulting to UTC", e)
+    PST = timezone.utc
 TIMESTAMP = datetime.now(PST).strftime("%Y-%m-%d_%H-%M-%S")
 
 # Logging
