@@ -24,6 +24,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install selenium
           pip install requests
+          pip install zoneinfo 
           choco install firefox --no-progress
           Invoke-WebRequest -Uri https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-win64.zip -OutFile geckodriver.zip
           Expand-Archive geckodriver.zip -DestinationPath $PWD
