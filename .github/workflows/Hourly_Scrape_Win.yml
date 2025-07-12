@@ -37,20 +37,21 @@ jobs:
           
       - name: Set artifact date
         id: artifact_date
+        shell: bash
         run: |
           echo "TIMESTAMP_PST=$(TZ='America/Los_Angeles' date '+%Y-%m-%d_%H-%M')" >> "$GITHUB_ENV"
-
+          echo "date=$(TZ='America/Los_Angeles' date '+%Y-%m-%d_%H-%M')" >> "$GITHUB_OUTPUT
 
       - name: Upload CSV
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cards-main-${{ steps.artifact_date.outputs.date }}
-          path: "**/debug_*.log"
+          path: "**/*_Cards_Main.csv"
 
       - name: Upload Debug Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: debug-logs-${{ steps.artifact_date.outputs.date }}
-          path: "**/*_Cards_Main.csv"
+          path: "**/debug_*.log"
