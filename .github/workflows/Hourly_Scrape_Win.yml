@@ -34,17 +34,23 @@ jobs:
       - name: Run Scraper Script with Debugging
         run: |
           python Test3.py || echo "Script failed"
+          
+      - name: Set artifact date
+        id: artifact_date
+        run: |
+          echo "TIMESTAMP_PST=$(TZ='America/Los_Angeles' date '+%Y-%m-%d_%H-%M')" >> "$GITHUB_ENV"
+
 
       - name: Upload CSV
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cards-main
-          path: _Cards_Main.csv
+          name: cards-main-${{ steps.artifact_date.outputs.date }}
+          path: "**/debug_*.log"
 
       - name: Upload Debug Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-logs
-          path: debug.log
+          name: debug-logs-${{ steps.artifact_date.outputs.date }}
+          path: "**/*_Cards_Main.csv"
