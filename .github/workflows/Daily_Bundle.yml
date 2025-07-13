@@ -1,0 +1,57 @@
+name: Daily Bundle
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: Set time variables
+        id: times
+        run: |
+          echo "CUTOFF=$(date -u -d '24 hours ago' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+          echo "DATE=$(date -u +'%Y-%m-%d')" >> "$GITHUB_ENV"
+
+      - name: Fetch recent runs
+        id: runs
+        run: |
+          gh api "/repos/${{ github.repository }}/actions/workflows/Hourly_Scrape_Win.yml/runs" > runs.json
+          ids=$(jq -r --arg cutoff "$CUTOFF" '.workflow_runs[] | select(.created_at >= $cutoff) | .id' runs.json | tr '\n' ' ')
+          echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        run: |
+          mkdir -p csv logs
+          for rid in ${{ steps.runs.outputs.run_ids }}; do
+            gh run download "$rid" --pattern "cards-main-*" -D csv || true
+            gh run download "$rid" --pattern "debug-logs-*" -D logs || true
+          done
+
+      - name: Zip CSV
+        run: zip -r "cards-main-${{ env.DATE }}.zip" csv
+
+      - name: Zip Logs
+        run: zip -r "debug-logs-${{ env.DATE }}.zip" logs
+
+      - name: Upload bundled cards
+        uses: actions/upload-artifact@v4
+        with:
+          name: cards-main-${{ env.DATE }}
+          path: cards-main-${{ env.DATE }}.zip
+
+      - name: Upload bundled logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-logs-${{ env.DATE }}
+          path: debug-logs-${{ env.DATE }}.zip
