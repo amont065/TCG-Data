@@ -13,11 +13,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
 try:
-    PST = ZoneInfo("America/Los_Angeles")
-except ZoneInfoNotFoundError:
-    logging.warning("Amerca/LA time zone not found. Defaulting to UTC", e)
-    PST = timezone.utc
-TIMESTAMP = datetime.now(PST).strftime("%Y-%m-%d_%H-%M-%S")
+    UTC = ZoneInfo("UTC")
+except ZoneInfoNotFoundError as e:
+    logging.warning("UTC time zone not found. Defaulting to UTC: %s", e)
+    UTC = timezone.utc
+TIMESTAMP = datetime.now(UTC).strftime("%Y-%m-%d_%H-%M-%S")
 
 # Logging
 LOG_FILENAME = f"debug_{TIMESTAMP}.log"
@@ -51,8 +51,8 @@ class TCGScraper:
     def __init__(self, website_link, location, driver=None):
         self.website_link = website_link
         self.location = location
-        self.run_date = datetime.now(PST).strftime("%Y-%m-%d")
-        self.run_time = datetime.now(PST).strftime("%H:%M:%S")
+        self.run_date = datetime.now(UTC).strftime("%Y-%m-%d")
+        self.run_time = datetime.now(UTC).strftime("%H:%M:%S")
         self.driver = driver if driver else self.init_driver()
         self.verified_clicked = False
 
@@ -132,7 +132,7 @@ class TCGScraper:
                     'Card Name','Seller Name','Condition','Price','Quantity Available',
                     'Is Direct Seller','Is Hobby Shop','Is Gold Star Seller',
                     'Seller Rating','Shipping Price','Total Sales','Is Buy Box Seller',
-                    'Date','Time (PST)','VPN Location'
+                    'Date','Time (UTC)','VPN Location'
                 ])
             for r in rows:
                 w.writerow(r + [self.run_date, self.run_time, self.location])
