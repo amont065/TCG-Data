@@ -28,13 +28,13 @@ jobs:
       - name: Fetch recent runs
         id: runs
         run: |
-          START_OF_DAY=$(date -u -d 'yesterday 00:00' +'%Y-%m-%dT%H:%M:%SZ')
-          END_OF_DAY=$(date -u -d 'today 00:00' +'%Y-%m-%dT%H:%M:%SZ')
-          gh api "/repos/${{ github.repository }}/actions/workflows/Hourly_Scrape_Win.yml/runs" > runs.json
-          ids=$(jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" '.workflow_runs[] | select(.created_at >= $START_OF_DAY and .created_at < $END_OF_DAY) | .id' runs.json | tr '\n' ' ')
-          echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
-          echo "START_OF_DAY=$START_OF_DAY" >> "$GITHUB_ENV"
-          echo "END_OF_DAY=$END_OF_DAY" >> "$GITHUB_ENV"
+            START_OF_DAY=$(date -u -d 'yesterday 00:00' +'%Y-%m-%dT%H:%M:%SZ')
+            END_OF_DAY=$(date -u -d 'today 00:00' +'%Y-%m-%dT%H:%M:%SZ')
+            gh api "/repos/${{ github.repository }}/actions/workflows/Hourly_Scrape_Win.yml/runs" --paginate -F per_page=100 > runs.json
+            ids=$(jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" '.workflow_runs[] | select(.created_at >= $START_OF_DAY and .created_at < $END_OF_DAY) | .id' runs.json | tr '\n' ' ')
+            echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
+            echo "START_OF_DAY=$START_OF_DAY" >> "$GITHUB_ENV"
+            echo "END_OF_DAY=$END_OF_DAY" >> "$GITHUB_ENV"
 
       - name: Download artifacts
         run: |
