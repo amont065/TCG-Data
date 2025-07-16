@@ -1,0 +1,65 @@
+name: Bundle By Date
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'UTC date to collect artifacts for (YYYY-MM-DD)'
+        required: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: Set time variables
+        id: times
+        run: |
+          TARGET_DATE="${{ inputs.date }}"
+          START_OF_DAY=$(date -u -d "$TARGET_DATE 00:00" +'%Y-%m-%dT%H:%M:%SZ')
+          END_OF_DAY=$(date -u -d "$TARGET_DATE +1 day" +'%Y-%m-%dT%H:%M:%SZ')
+          echo "DATE=$TARGET_DATE" >> "$GITHUB_ENV"
+          echo "START_OF_DAY=$START_OF_DAY" >> "$GITHUB_ENV"
+          echo "END_OF_DAY=$END_OF_DAY" >> "$GITHUB_ENV"
+
+      - name: Fetch runs
+        id: runs
+        run: |
+          gh api "/repos/${{ github.repository }}/actions/workflows/Hourly_Scrape_Win.yml/runs" > runs.json
+          ids=$(jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" '.workflow_runs[] | select(.created_at >= $START_OF_DAY and .created_at < $END_OF_DAY) | .id' runs.json | tr '\n' ' ')
+          echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        run: |
+          mkdir -p csv logs
+          for rid in ${{ steps.runs.outputs.run_ids }}; do
+            gh run download "$rid" --pattern "cards-main-*" -D csv || true
+            gh run download "$rid" --pattern "debug-logs-*" -D logs || true
+          done
+
+      - name: Zip CSV
+        run: zip -r "cards-main-${{ env.DATE }}.zip" csv
+
+      - name: Zip Logs
+        run: zip -r "debug-logs-${{ env.DATE }}.zip" logs
+
+      - name: Upload bundled cards
+        uses: actions/upload-artifact@v4
+        with:
+          name: cards-main-${{ env.DATE }}
+          path: cards-main-${{ env.DATE }}.zip
+
+      - name: Upload bundled logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-logs-${{ env.DATE }}
+          path: debug-logs-${{ env.DATE }}.zip
