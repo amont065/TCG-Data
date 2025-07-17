@@ -34,9 +34,9 @@ jobs:
       - name: Fetch runs
         id: runs
         run: |
-            gh api "/repos/${{ github.repository }}/actions/workflows/Hourly_Scrape_Win.yml/runs" --paginate -F per_page=100 > runs.json
-            ids=$(jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" '.workflow_runs[] | select(.created_at >= $START_OF_DAY and .created_at < $END_OF_DAY) | .id' runs.json | tr '\n' ' ')
-            echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
+          gh api "/repos/${{ github.repository }}/actions/workflows/Hourly_Scrape_Win.yml/runs" --paginate -F per_page=100 > runs.json
+          ids=$(jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" '.workflow_runs[] | select(.created_at >= $START_OF_DAY and .created_at < $END_OF_DAY) | .id' runs.json | tr '\n' ' ')
+          echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
 
       - name: Download artifacts
         run: |
