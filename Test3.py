@@ -206,7 +206,7 @@ def main():
     VPN = get_location()
     logging.info("Using detected location: %s", VPN)
     urls = [
-        "https://www.tcgplayer.com/product/576520/magic-duskmourn-house-of-horror-hushwood-verge?page=1&Language=English"        #magic
+        "https://www.tcgplayer.com/product/576520/magic-duskmourn-house-of-horror-hushwood-verge?page=1&Language=English",        #magic
         "https://www.tcgplayer.com/product/576530/magic-duskmourn-house-of-horror-thornspire-verge?Language=English&page=1",
         "https://www.tcgplayer.com/product/576512/magic-duskmourn-house-of-horror-blazemire-verge?page=1&Language=English",
         "https://www.tcgplayer.com/product/576518/magic-duskmourn-house-of-horror-gloomlake-verge?Language=English&page=1",
