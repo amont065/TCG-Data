@@ -34,10 +34,10 @@ jobs:
       - name: Fetch runs
         id: runs
         run: |
-          ids=$(gh run list --workflow Hourly_Scrape_Win.yml --limit 1000 --json createdAt,id \
+          ids=$(gh run list --workflow Hourly_Scrape_Win.yml --limit 1000 --json createdAt,databaseId \
                   | jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" \
-                      '.[] | select(.createdAt >= $START_OF_DAY and .createdAt < $END_OF_DAY) | .id' \
-                     tr '\n' ' ')
+                      '.[] | select(.createdAt >= $START_OF_DAY and .createdAt < $END_OF_DAY) | .databaseId' \
+                  | tr '\n' ' ')
           echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
 
       - name: Download artifacts
