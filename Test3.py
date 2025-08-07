@@ -194,7 +194,7 @@ class TCGScraper:
                     self.wait_for_element(By.CSS_SELECTOR, "div.product-details__listings-results section.listing-item")
                     time.sleep(2)
                     page_number += 1
-                eexcept (NoSuchElementException, TimeoutException):
+                except (NoSuchElementException, TimeoutException):
                     logging.info("No Next button; done.")
                     break
 
