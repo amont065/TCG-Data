@@ -10,7 +10,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions NoSuchElementException, TimeoutException
 
 try:
     UTC = ZoneInfo("UTC")
@@ -184,16 +184,17 @@ class TCGScraper:
                 logging.info("Scraped listing page %d", page_number)
 
                 try:
-                    nxt = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/section[2]/section/section[1]/section/section/section/div[2]/a[2]')
-                    disabled = nxt.get_attribute("aria-disabled") == "true"
-                    if disabled:
+                    nxt = WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, "a[aria-label='Next page']"))
+                    )
+                    if nxt.get_attribute("aria-disabled") == "true":
                         logging.info("Next is disabled; done.")
                         break
                     nxt.click()
                     self.wait_for_element(By.CSS_SELECTOR, "div.product-details__listings-results section.listing-item")
                     time.sleep(2)
                     page_number += 1
-                except NoSuchElementException:
+                eexcept (NoSuchElementException, TimeoutException):
                     logging.info("No Next button; done.")
                     break
 
