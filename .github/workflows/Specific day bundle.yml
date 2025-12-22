@@ -1,10 +1,13 @@
-name: Bundle By Date
+name: Bundle By Date Range
 
 on:
   workflow_dispatch:
     inputs:
-      date:
-        description: 'UTC date to collect artifacts for (YYYY-MM-DD)'
+      start_date:
+        description: "UTC start date (YYYY-MM-DD)"
+        required: true
+      end_date:
+        description: "UTC end date (YYYY-MM-DD)"
         required: true
 
 jobs:
@@ -12,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -19,49 +23,69 @@ jobs:
       - name: Install GitHub CLI and jq
         run: |
           sudo apt-get update
-          sudo apt-get install -y gh jq
+          sudo apt-get install -y gh jq zip
 
       - name: Set time variables
-        id: times
         run: |
-          TARGET_DATE="${{ inputs.date }}"
-          START_OF_DAY=$(date -u -d "$TARGET_DATE 00:00" +'%Y-%m-%dT%H:%M:%SZ')
-          END_OF_DAY=$(date -u -d "$TARGET_DATE +1 day" +'%Y-%m-%dT%H:%M:%SZ')
-          echo "DATE=$TARGET_DATE" >> "$GITHUB_ENV"
-          echo "START_OF_DAY=$START_OF_DAY" >> "$GITHUB_ENV"
-          echo "END_OF_DAY=$END_OF_DAY" >> "$GITHUB_ENV"
+          START_DATE="${{ inputs.start_date }}"
+          END_DATE="${{ inputs.end_date }}"
 
-      - name: Fetch runs
-        id: runs
+          # Inclusive range by using an exclusive upper bound (end_date + 1 day at 00:00Z)
+          START_TS=$(date -u -d "$START_DATE 00:00" +'%Y-%m-%dT%H:%M:%SZ')
+          END_EXCL_TS=$(date -u -d "$END_DATE +1 day 00:00" +'%Y-%m-%dT%H:%M:%SZ')
+
+          BUNDLE_LABEL="${START_DATE}_to_${END_DATE}"
+          BUNDLE_RUN_TS=$(date -u +'%Y-%m-%dT%H%M%SZ')
+
+          echo "START_DATE=$START_DATE" >> "$GITHUB_ENV"
+          echo "END_DATE=$END_DATE" >> "$GITHUB_ENV"
+          echo "START_TS=$START_TS" >> "$GITHUB_ENV"
+          echo "END_EXCL_TS=$END_EXCL_TS" >> "$GITHUB_ENV"
+          echo "BUNDLE_LABEL=$BUNDLE_LABEL" >> "$GITHUB_ENV"
+          echo "BUNDLE_RUN_TS=$BUNDLE_RUN_TS" >> "$GITHUB_ENV"
+
+      - name: Fetch runs in range
         run: |
-          ids=$(gh run list --workflow Hourly_Scrape_Win.yml --limit 1000 --json createdAt,databaseId \
-                  | jq -r --arg START_OF_DAY "$START_OF_DAY" --arg END_OF_DAY "$END_OF_DAY" \
-                      '.[] | select(.createdAt >= $START_OF_DAY and .createdAt < $END_OF_DAY) | .databaseId' \
-                  | tr '\n' ' ')
-          echo "run_ids=$ids" >> "$GITHUB_OUTPUT"
+          # Increase limit to reduce chances of missing runs in high-volume repos
+          gh run list \
+            --workflow Hourly_Scrape_Win.yml \
+            --limit 5000 \
+            --json createdAt,databaseId \
+            | jq -r --arg START "$START_TS" --arg END "$END_EXCL_TS" '
+                .[]
+                | select(.createdAt >= $START and .createdAt < $END)
+                | "\(.databaseId)\t\(.createdAt)"
+              ' > run_list.tsv
 
-      - name: Download artifacts
+          echo "Runs found:"
+          wc -l run_list.tsv || true
+          head -n 20 run_list.tsv || true
+
+      - name: Download artifacts (organized by run timestamp)
         run: |
-          mkdir -p csv logs
-          for rid in ${{ steps.runs.outputs.run_ids }}; do
-            gh run download "$rid" --pattern "cards-main-*" -D csv || true
-            gh run download "$rid" --pattern "debug-logs-*" -D logs || true
-          done
+          mkdir -p bundle
 
-      - name: Zip CSV
-        run: zip -r "cards-main-${{ env.DATE }}.zip" csv
+          # Each line is: <run_id>\t<createdAt>
+          while IFS=$'\t' read -r rid createdAt; do
+            [ -z "$rid" ] && continue
 
-      - name: Zip Logs
-        run: zip -r "debug-logs-${{ env.DATE }}.zip" logs
+            # Make createdAt safe for folder names (remove Z, replace ":" with "-")
+            safeCreatedAt=$(echo "$createdAt" | sed 's/Z$//' | sed 's/:/-/g')
 
-      - name: Upload bundled cards
+            runDir="bundle/${safeCreatedAt}_run-${rid}"
+            mkdir -p "$runDir/csv" "$runDir/logs"
+
+            # Keep original artifact filenames; avoid failing if a run doesn't have a matching artifact
+            gh run download "$rid" --pattern "cards-main-*" -D "$runDir/csv" || true
+            gh run download "$rid" --pattern "debug-logs-*" -D "$runDir/logs" || true
+          done < run_list.tsv
+
+      - name: Create single zip bundle
+        run: |
+          zip -r "bundle-${{ env.BUNDLE_LABEL }}-generated-${{ env.BUNDLE_RUN_TS }}.zip" bundle
+
+      - name: Upload single bundled artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cards-main-${{ env.DATE }}
-          path: cards-main-${{ env.DATE }}.zip
-
-      - name: Upload bundled logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-logs-${{ env.DATE }}
-          path: debug-logs-${{ env.DATE }}.zip
+          name: bundle-${{ env.BUNDLE_LABEL }}-generated-${{ env.BUNDLE_RUN_TS }}
+          path: bundle-${{ env.BUNDLE_LABEL }}-generated-${{ env.BUNDLE_RUN_TS }}.zip
