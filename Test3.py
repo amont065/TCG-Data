@@ -55,6 +55,7 @@ class TCGScraper:
         self.run_time = datetime.now(UTC).strftime("%H:%M:%S")
         self.driver = driver if driver else self.init_driver()
         self.verified_clicked = False
+        self.page_size_set = False
 
     def init_driver(self):
         options = Options()
@@ -76,16 +77,30 @@ class TCGScraper:
             return ""
 
     def get_buy_box_data(self):
-        seller = self.get_element_text(By.XPATH, '//*[@id="app"]/div/div/section[2]/section/div/div[2]/section[2]/section[1]/div/section[3]', 'Buy Box Seller')
+        try:
+            spotlight = self.driver.find_element(By.CLASS_NAME, "spotlight")
+            logging.info("Buy Box found.")
+        except NoSuchElementException:
+            logging.warning("No Buy Box found.")
+        seller = self.get_element_text(By.CLASS_NAME, 'spotlight__seller', 'Buy Box Seller')
         if seller.startswith("Sold by "):
             seller = seller[len("Sold by "):]
 
-        qty_txt = self.get_element_text(By.CSS_SELECTOR, '.add-to-cart__available', 'Buy Box Quantity')
+        # quantity from spotlight seller is also a bit wonky
+        qty_txt = ""
+        try:
+            qty_el = WebDriverWait(spotlight, 15).until(
+                lambda el: el.find_element(By.CSS_SELECTOR, "span.add-to-cart__available")
+            )
+            qty_txt = qty_el.text.strip()
+        except TimeoutException:
+            logging.warning("Can't find element: Buy Box Quantity")
         qty = qty_txt.split()[-1] if qty_txt else ""
         cond = self.get_element_text(By.CSS_SELECTOR, '.spotlight__condition', 'Buy Box Condition')
         price = self.get_element_text(By.CSS_SELECTOR, '.spotlight__price', 'Buy Box Price')
-        ship = self.get_element_text(By.XPATH, '//*[@id="app"]/div/div/section[2]/section/div[2]/div[2]/section[2]/section[1]/div/section[2]/div/span', 'Buy Box Shipping')
+        ship = self.get_element_text(By.CSS_SELECTOR, '.spotlight__shipping', 'Buy Box Shipping')
 
+        # these are not present in the buybox, we will find them from the regular seller listings below
         total_sales = "Not Available"
         hobby = gold = rating = "Not Available"
 
@@ -115,10 +130,39 @@ class TCGScraper:
         hobby  = "TRUE" if listing.find_elements(By.CSS_SELECTOR, "img[alt='Certified Hobby Shop']") else "FALSE"
         gold   = "TRUE" if listing.find_elements(By.CSS_SELECTOR, "img[alt='Gold Star Seller']") else "FALSE"
 
-        rating_txt = self.safe_find_text(listing, ".//div[1]/div/div/div[1]", "Seller Rating", by=By.XPATH)
-        sales_txt  = self.safe_find_text(listing, ".//div[1]/div/div/div[2]", "Total Sales", by=By.XPATH)
+        rating_txt = self.safe_find_text(listing, ".seller-info__rating", "Seller Rating")
+        sales_txt  = self.safe_find_text(listing, ".seller-info__sales", "Total Sales")
         sales = sales_txt.replace("(", "").replace(")", "") if sales_txt else "Not Available"
-        ship = self.safe_find_text(listing, ".//div[2]/div[2]", "Shipping Price", by=By.XPATH)
+        # this element doesnt have a unique class, so we have to use try to find an element that has the word shipping in it
+        # even items with free shipping have that text in an element
+        ship = ""
+        try:
+            # Prefer scoping to the info block that contains condition/price/shipping
+            info = listing.find_element(By.CSS_SELECTOR, ".listing-item__listing-data__info")
+        except NoSuchElementException:
+            info = listing  # fallback
+
+        # 1) Try: find a leaf-ish span containing "shipping" (case-insensitive)
+        ship = self.safe_find_text(
+            info,
+            ".//span[contains(translate(normalize-space(.), 'SHIPPING', 'shipping'), 'shipping')]",
+            "Shipping Price",
+            by=By.XPATH
+        ).strip()
+
+        # 2) Fallback: any element containing "shipping" (in case it's not a span)
+        if not ship:
+            ship = self.safe_find_text(
+                info,
+                ".//*[contains(translate(normalize-space(.), 'SHIPPING', 'shipping'), 'shipping')]",
+                "Shipping Price (fallback)",
+                by=By.XPATH
+            ).strip()
+
+        # Optional: normalize if you want "Free Shipping" -> "0" or similar (leave as text if not)
+        # if ship and "free" in ship.lower() and "shipping" in ship.lower():
+        #     ship = "Free Shipping"
+        # --- end Shipping ---
 
         is_bb = (name == buy_box_name)
         return [name, cond, price, qty, direct, hobby, gold, rating_txt, ship, sales, is_bb]
@@ -137,6 +181,50 @@ class TCGScraper:
             for r in rows:
                 w.writerow(r + [self.run_date, self.run_time, self.location])
 
+    def set_listings_per_page_50(self, timeout=10):
+        wait = WebDriverWait(self.driver, timeout)
+
+        # 1) Locate the specific toolbar section for "listings per page"
+        container = wait.until(EC.presence_of_element_located((
+            By.CLASS_NAME,
+            'product-details__listings-toolbar__options-listings-per-page'
+        )))
+        logging.info("Listings per page container found.")
+
+        # 2) Find the combobox trigger INSIDE this container (generic again)
+        trigger = wait.until(lambda d: container.find_element(
+            By.CSS_SELECTOR,
+            ".tcg-input-select__trigger[role='combobox'][aria-controls]"
+        ))
+
+        # 3) Open dropdown if needed
+        if trigger.get_attribute("aria-expanded") != "true":
+            # Some UIs only open reliably by clicking the toggle button
+            try:
+                btn = container.find_element(By.CSS_SELECTOR, "button[aria-label='Toggle listbox']")
+                self.driver.execute_script("arguments[0].click()", btn)
+            except Exception:
+                self.driver.execute_script("arguments[0].click()", trigger)
+
+            wait.until(lambda d: trigger.get_attribute("aria-expanded") == "true")
+
+        # 4) Locate listbox by the ID provided in aria-controls (do NOT assume it's inside container)
+        listbox_id = trigger.get_attribute("aria-controls")
+
+        listbox = wait.until(EC.presence_of_element_located((By.ID, listbox_id)))
+
+        # 5) Click option 50 by aria-label or text
+        opt50 = wait.until(EC.element_to_be_clickable((
+            By.XPATH,
+            f"//ul[@id='{listbox_id}' and @role='listbox']"
+            f"//li[@role='option' and (@aria-label='50' or normalize-space(.)='50')]"
+        )))
+        self.driver.execute_script("arguments[0].click()", opt50)
+
+        # 6) Confirm selection applied
+        wait.until(lambda d: trigger.text.strip() == "50")
+        logging.info("Listings per page set to 50.")
+    
     def click_checkboxes(self):
         if not self.verified_clicked:
             try: 
@@ -148,22 +236,33 @@ class TCGScraper:
                     self.verified_clicked = True
             except Exception as e:
                 logging.error("Filter error: %s", e)
-        try:
-            for xp in ['//*[@id="Printing-Normal-filter"]']:
-                cb = self.driver.find_element(By.XPATH, xp)
-                self.driver.execute_script("arguments[0].click()", cb)
-                time.sleep(1)
-            logging.info("Normal printing filters applied.")
-        except Exception as e:
-            logging.error("Filter error: %s", e)
+
+        # set listings per page to 50 to speed up scraping
+        if not self.page_size_set:
+            try:
+                self.set_listings_per_page_50(timeout=10)
+                logging.info("Page size set to 50.")
+                self.page_size_set = True
+            except Exception as e:
+                logging.error("Page size selection error: %s", e)
+            
+        # Normal printing filter is currently disabled
+        #try:
+        #    for xp in ['//*[@id="Printing-Normal-filter"]']:
+        #        cb = self.driver.find_element(By.XPATH, xp)
+        #        self.driver.execute_script("arguments[0].click()", cb)
+        #        time.sleep(1)
+        #       logging.info("Normal printing filters applied.")
+        #except Exception as e:
+        #    logging.error("Filter error: %s", e)
 
     def scrape(self):
         try:
             self.driver.get(self.website_link)
-            self.wait_for_element(By.XPATH, '//*[@id="app"]/div/div/section[2]/section/div/div[2]/div/h1')
+            self.wait_for_element(By.CLASS_NAME, 'product-details__name')
             card = self.get_element_text(
-                By.XPATH,
-                '//*[@id="app"]/div/div/section[2]/section/div/div[2]/div/h1',
+                By.CLASS_NAME,
+                'product-details__name',
                 "Card Name"
             )
             logging.info("Scraping %s", card)
@@ -184,7 +283,7 @@ class TCGScraper:
                 logging.info("Scraped listing page %d", page_number)
 
                 try:
-                    nxt = WebDriverWait(self.driver, 10).until(
+                    nxt = WebDriverWait(self.driver, 20).until(
                         EC.element_to_be_clickable((By.CSS_SELECTOR, "a[aria-label='Next page']"))
                     )
                     if nxt.get_attribute("aria-disabled") == "true":
