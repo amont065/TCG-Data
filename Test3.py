@@ -82,9 +82,21 @@ class TCGScraper:
             logging.info("Buy Box found.")
         except NoSuchElementException:
             logging.warning("No Buy Box found.")
-        seller = self.get_element_text(By.CLASS_NAME, 'spotlight__seller', 'Buy Box Seller')
-        if seller.startswith("Sold by "):
-            seller = seller[len("Sold by "):]
+        
+
+        seller = ""
+        try:
+            seller = WebDriverWait(self.driver, 20).until(
+                lambda d: (
+                    (spotlight.find_element(By.CSS_SELECTOR, ".spotlight__seller a").get_attribute("aria-label")
+                    or spotlight.find_element(By.CSS_SELECTOR, ".spotlight__seller a").get_attribute("textContent")
+                    or "")
+                    .strip()
+                ) or False
+            )
+        except TimeoutException:
+            logging.warning("Buy Box Seller link not ready (empty or missing).")
+            seller = ""
 
         # quantity from spotlight seller is also a bit wonky
         qty_txt = ""
@@ -173,7 +185,7 @@ class TCGScraper:
             w = csv.writer(f)
             if not exists:
                 w.writerow([
-                    'Card Name','Seller Name','Condition','Price','Quantity Available',
+                    'Card Name','URL','Seller Name','Condition','Price','Quantity Available',
                     'Is Direct Seller','Is Hobby Shop','Is Gold Star Seller',
                     'Seller Rating','Shipping Price','Total Sales','Is Buy Box Seller',
                     'Date','Time (UTC)','VPN Location'
@@ -272,13 +284,13 @@ class TCGScraper:
             # buy box
             bb = self.get_buy_box_data()
             bb_name = bb[0]
-            self.save_to_csv([[card] + bb + [True]])
+            self.save_to_csv([[card] + [self.website_link] + bb + [True]])
 
             # listing pages loop
             page_number = 1
             while True:
                 listings = self.driver.find_elements(By.CSS_SELECTOR, "div.product-details__listings-results section.listing-item")
-                data = [[card] + self.get_listing_data(l, bb_name) for l in listings]
+                data = [[card, self.website_link] + self.get_listing_data(l, bb_name) for l in listings]
                 self.save_to_csv(data)
                 logging.info("Scraped listing page %d", page_number)
 
